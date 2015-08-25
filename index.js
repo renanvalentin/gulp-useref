@@ -3,7 +3,8 @@ var gutil = require('gulp-util'),
     through = require('through2'),
     useref = require('node-useref'),
     path = require('path'),
-    multimatch = require('multimatch');
+    multimatch = require('multimatch'),
+    fs = require('fs');
 
 function getSearchPaths(cwd, searchPath, filepath) {
     // Assuming all paths are relative, strip off leading slashes
@@ -138,6 +139,25 @@ module.exports.assets = function (opts) {
 
                     // Flatten nested array before giving it to vinyl-fs
                     globs = _.flatten(globs, true);
+
+                    globs = globs.filter(function(file) {
+                        try{
+                            return fs.statSync(file).isFile();
+                        } catch(error) {
+                            return false;
+                        }
+                    }).reduce(function(lists, file) {
+                        var exists = lists.some(function(f){
+                            return f.split('\\').pop() === file.split('\\').pop();
+                        });
+
+                        if(!exists) {
+                            lists.push(file);
+                        }
+
+                        return lists;
+                    }, []);
+
                     src = vfs.src(globs, {
                         base: file.base,
                         nosort: true,
